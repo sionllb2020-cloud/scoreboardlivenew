@@ -151,11 +151,15 @@
       }
 
       function startGame() {
-        const serverTime = firebase.database.ServerValue.TIMESTAMP;
+        firebase.database().ref(".info/serverTimeOffset").once("value", (snap) => {
+        const offset = snap.val() || 0;
 
-        db.ref("scoreboard").update({
-        gameStart: serverTime,
-        gameDuration: data.time || 0,
+        const now = Date.now() + offset; // ini waktu server versi device
+
+          save({
+            gameStart: now,
+            gameDuration: data.time || 0,
+        });
         });
       }
 
