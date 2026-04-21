@@ -205,21 +205,27 @@
       function startShot() {
         if (!data.shotOn) return;
 
-        save({
-          shotStart: Date.now(),
+          save({
+          shotStart: firebase.database.ServerValue.TIMESTAMP,
           shotDuration: data.shot || 24,
         });
       }
-
       function pauseShot() {
         if (!data.shotStart) return;
 
-        let elapsed = Math.floor((Date.now() - data.shotStart) / 1000);
-        let remaining = Math.max(0, (data.shotDuration || 24) - elapsed);
+          firebase.database().ref(".info/serverTimeOffset").once("value", (snap) => {
+          const offset = snap.val() || 0;
+          const now = Date.now() + offset;
 
-        save({
+          let now = Date.now() + serverOffset;
+
+          let elapsed = Math.floor((now - data.shotStart) / 1000);
+          let remaining = Math.max(0, data.shotDuration - elapsed);
+
+          save({
           shot: remaining,
           shotStart: null,
+        });
         });
       }
 
