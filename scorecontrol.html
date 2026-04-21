@@ -1,0 +1,349 @@
+
+
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Scoreboard Control</title>
+
+    <!-- 🔥 FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    
+    <style>
+      body {
+        background: black;
+        color: white;
+        font-family: Arial;
+        padding: 20px;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+      }
+
+      .section {
+        margin-bottom: 20px;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+
+      input {
+        padding: 5px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <script>
+      // 🔥 CONFIG KAMU
+      const firebaseConfig = {
+        apiKey: "AIzaSyAjfc1j_OqFf3GQBEJdvOxugZvEFYeilig",
+        authDomain: "scoreboardlive-df382.firebaseapp.com",
+        databaseURL:
+          "https://scoreboardlive-df382-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "scoreboardlive-df382",
+        storageBucket: "scoreboardlive-df382.firebasestorage.app",
+        messagingSenderId: "158633426706",
+        appId: "1:158633426706:web:5db59534735d2e734dfdcb",
+        measurementId: "G-42BH7JL41P",
+      };
+
+      // 🔥 INIT
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.database();
+
+      // 🔥 DATA DEFAULT
+      let data = {
+        scoreA: 0,
+        scoreB: 0,
+        foulA: 0,
+        foulB: 0,
+        time: 600,
+        defaultTime: 600,
+        q: 1,
+        shot: 24,
+        shotOn: true,
+        textColorA: "#ffffff",
+        textColorB: "#ffffff",
+      };
+
+      // 🔥 AMBIL DATA DARI FIREBASE (BIAR TIDAK RESET)
+      db.ref("scoreboard").once("value", (snapshot) => {
+        if (snapshot.exists()) {
+          data = snapshot.val();
+        }
+      });
+
+      let gameInt = null;
+      let shotInt = null;
+
+      // 🔥 SAVE KE FIREBASE
+      function save() {
+        db.ref("scoreboard").set(data);
+      }
+
+      /* TEAM */
+      function setName(t, v) {
+        data["team" + t + "Name"] = v;
+        save();
+      }
+
+      function setLogo(e, t) {
+        let reader = new FileReader();
+        reader.onload = () => {
+          data["logo" + t] = reader.result;
+          save();
+        };
+        reader.readAsDataURL(e.target.files[0]);
+      }
+
+      function randomColor(t) {
+        let c = "#" + Math.floor(Math.random() * 16777215).toString(16);
+        data["color" + t] = c;
+        save();
+      }
+
+      function setColor(t, color) {
+        data["color" + t] = color;
+        save();
+      }
+
+      function setTextColor(t, color) {
+        data["textColor" + t] = color;
+        save();
+      }
+
+      /* SCORE */
+      function addScore(t, v) {
+        data["score" + t] += v;
+        save();
+      }
+
+      function resetScore() {
+        data.scoreA = 0;
+        data.scoreB = 0;
+        save();
+      }
+
+      /* FOUL */
+      function addFoul(t) {
+        data["foul" + t]++;
+        save();
+      }
+
+      function minusFoul(t) {
+        if (data["foul" + t] > 0) data["foul" + t]--;
+        save();
+      }
+
+      function resetFoul() {
+        data.foulA = 0;
+        data.foulB = 0;
+        save();
+      }
+
+      /* TIMER */
+      function setTime() {
+        let m = parseInt(min.value) || 0;
+        let s = parseInt(sec.value) || 0;
+        data.time = m * 60 + s;
+        data.defaultTime = data.time;
+        save();
+      }
+
+      function startGame() {
+        if (gameInt) return;
+        gameInt = setInterval(() => {
+          if (data.time > 0) {
+            data.time--;
+            save();
+          }
+        }, 1000);
+      }
+
+      function pauseGame() {
+        clearInterval(gameInt);
+        gameInt = null;
+      }
+
+      function resetTimer() {
+        data.time = data.defaultTime;
+        pauseGame();
+        save();
+      }
+
+      /* QUARTER */
+      function nextQuarter() {
+        if (data.q < 4) {
+          data.q++;
+        }
+        data.time = data.defaultTime;
+        pauseGame();
+        save();
+      }
+
+      function resetQuarter() {
+        data.q = 1;
+        data.time = data.defaultTime;
+        pauseGame();
+        save();
+      }
+
+      /* SHOT CLOCK */
+      function startShot() {
+        if (!data.shotOn) return;
+        clearInterval(shotInt);
+        shotInt = setInterval(() => {
+          if (data.shot > 0) {
+            data.shot--;
+          } else {
+            data.shot = 24;
+          }
+          save();
+        }, 1000);
+      }
+
+      function pauseShot() {
+        clearInterval(shotInt);
+        shotInt = null;
+      }
+
+      function resetShot() {
+        data.shot = 24;
+        save();
+      }
+
+      function toggleShot() {
+        data.shotOn = !data.shotOn;
+        if (!data.shotOn) pauseShot();
+        save();
+      }
+    </script>
+
+    <!-- UI kamu tetap sama -->
+    <div class="container">
+      <!-- (tidak diubah, biar tetap seperti punyamu) -->
+      <div>
+        <div class="section">
+          <h3>NAMA TEAM</h3>
+          <div class="row">
+            <input placeholder="Team A" oninput="setName('A', this.value)" />
+            <input type="color" onchange="setTextColor('A', this.value)" />
+
+            <input placeholder="Team B" oninput="setName('B', this.value)" />
+            <input type="color" onchange="setTextColor('B', this.value)" />
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>LOGO</h3>
+          <div class="row">
+            <input type="file" onchange="setLogo(event, 'A')" />
+            <input type="file" onchange="setLogo(event, 'B')" />
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>WARNA TEAM</h3>
+          <div class="row">
+            Team A:
+            <button onclick="randomColor('A')">Random</button>
+            <input type="color" onchange="setColor('A', this.value)" />
+
+            Team B:
+            <button onclick="randomColor('B')">Random</button>
+            <input type="color" onchange="setColor('B', this.value)" />
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>SKOR</h3>
+          <div class="row">
+            Team A:
+            <button onclick="addScore('A', 1)">+1</button>
+            <button onclick="addScore('A', 2)">+2</button>
+            <button onclick="addScore('A', 3)">+3</button>
+
+            Team B:
+            <button onclick="addScore('B', 1)">+1</button>
+            <button onclick="addScore('B', 2)">+2</button>
+            <button onclick="addScore('B', 3)">+3</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>FOUL</h3>
+          <div class="row">
+            A:
+            <button onclick="addFoul('A')">+</button>
+            <button onclick="minusFoul('A')">-</button>
+
+            B:
+            <button onclick="addFoul('B')">+</button>
+            <button onclick="minusFoul('B')">-</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KANAN -->
+      <div>
+        <div class="section">
+          <h3>RESET</h3>
+          <div class="row">
+            <button onclick="resetScore()">Score</button>
+            <button onclick="resetFoul()">Foul</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>SET WAKTU</h3>
+          <div class="row">
+            <input id="min" placeholder="Min" />
+            <input id="sec" placeholder="Sec" />
+            <button onclick="setTime()">SET</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>TIMER</h3>
+          <div class="row">
+            <button onclick="startGame()">START</button>
+            <button onclick="pauseGame()">PAUSE</button>
+            <button onclick="resetTimer()">RESET</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>QUARTER</h3>
+          <div class="row">
+            <button onclick="nextQuarter()">NEXT</button>
+            <button onclick="resetQuarter()">RESET</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>SHOT CLOCK</h3>
+          <div class="row">
+            <button onclick="startShot()">START</button>
+            <button onclick="pauseShot()">PAUSE</button>
+            <button onclick="resetShot()">RESET</button>
+            <button onclick="toggleShot()">ON/OFF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
