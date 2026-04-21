@@ -139,7 +139,6 @@
     </div>
 
     <script>
-      // 🔥 CONFIG (SAMA DENGAN CONTROL)
       const firebaseConfig = {
         apiKey: "AIzaSyAjfc1j_OqFf3GQBEJdvOxugZvEFYeilig",
         authDomain: "scoreboardlive-df382.firebaseapp.com",
@@ -149,11 +148,12 @@
         storageBucket: "scoreboardlive-df382.firebasestorage.app",
         messagingSenderId: "158633426706",
         appId: "1:158633426706:web:5db59534735d2e734dfdcb",
-        measurementId: "G-42BH7JL41P",
       };
 
       firebase.initializeApp(firebaseConfig);
       const db = firebase.database();
+
+      let currentData = {};
 
       function formatTime(t) {
         let m = Math.floor(t / 60);
@@ -161,37 +161,66 @@
         return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
       }
 
-      // 🔥 REALTIME LISTENER
+      // 🔥 LISTENER (HANYA TERIMA DATA)
       db.ref("scoreboard").on("value", (snapshot) => {
-        let data = snapshot.val() || {};
+        currentData = snapshot.val() || {};
 
-        scoreA.innerText = data.scoreA || 0;
-        scoreB.innerText = data.scoreB || 0;
+        scoreA.innerText = currentData.scoreA || 0;
+        scoreB.innerText = currentData.scoreB || 0;
 
-        foulA.innerText = data.foulA || 0;
-        foulB.innerText = data.foulB || 0;
+        foulA.innerText = currentData.foulA || 0;
+        foulB.innerText = currentData.foulB || 0;
 
-        timer.innerText = formatTime(data.time || 0);
-        quarter.innerText = "Q" + (data.q || 1);
+        quarter.innerText = "Q" + (currentData.q || 1);
 
-        shotclock.innerText = data.shot || 24;
-        shotclock.style.display = data.shotOn ? "block" : "none";
+        teamAName.innerText = currentData.teamAName || "TEAM A";
+        teamBName.innerText = currentData.teamBName || "TEAM B";
 
-        teamAName.innerText = data.teamAName || "TEAM A";
-        teamBName.innerText = data.teamBName || "TEAM B";
+        if (currentData.logoA) logoA.src = currentData.logoA;
+        if (currentData.logoB) logoB.src = currentData.logoB;
 
-        if (data.logoA) logoA.src = data.logoA;
-        if (data.logoB) logoB.src = data.logoB;
+        if (currentData.colorA)
+          document.documentElement.style.setProperty("--teamA", currentData.colorA);
 
-        if (data.colorA)
-          document.documentElement.style.setProperty("--teamA", data.colorA);
+        if (currentData.colorB)
+          document.documentElement.style.setProperty("--teamB", currentData.colorB);
 
-        if (data.colorB)
-          document.documentElement.style.setProperty("--teamB", data.colorB);
-
-        teamAName.style.color = data.textColorA || "#ffffff";
-        teamBName.style.color = data.textColorB || "#ffffff";
+        teamAName.style.color = currentData.textColorA || "#ffffff";
+        teamBName.style.color = currentData.textColorB || "#ffffff";
       });
+
+      // 🔥 TIMER LOOP (LOKAL → SMOOTH)
+      setInterval(() => {
+        // GAME TIMER
+        if (currentData.gameStart) {
+          const now = Date.now();
+          const elapsed = Math.floor((now - currentData.gameStart) / 1000);
+          const remaining = Math.max(
+            0,
+            (currentData.gameDuration || 0) - elapsed
+          );
+
+          timer.innerText = formatTime(remaining);
+        } else {
+          timer.innerText = formatTime(currentData.time || 0);
+        }
+
+        // SHOT CLOCK
+        if (currentData.shotStart && currentData.shotOn) {
+          const now = Date.now();
+          const elapsed = Math.floor((now - currentData.shotStart) / 1000);
+          const remaining = Math.max(
+            0,
+            (currentData.shotDuration || 24) - elapsed
+          );
+
+          shotclock.innerText = remaining;
+          shotclock.style.display = "block";
+        } else {
+          shotclock.innerText = currentData.shot || 24;
+          shotclock.style.display = currentData.shotOn ? "block" : "none";
+        }
+      }, 200); // 🔥 update tiap 0.2 detik (super smooth)
     </script>
   </body>
 </html>
