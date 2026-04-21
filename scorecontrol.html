@@ -145,12 +145,14 @@
         });
       }
 
-      function startGame() {
-        save({
-          gameStart: Date.now(),
-          gameDuration: data.time || 0,
-        });
-      }
+     function startGame() {
+  const OFFSET = 3000; // kompensasi 3 detik
+
+  save({
+    gameStart: Date.now() + OFFSET,
+    gameDuration: data.time || 0,
+  });
+}
 
       function pauseGame() {
         if (!data.gameStart) return;
