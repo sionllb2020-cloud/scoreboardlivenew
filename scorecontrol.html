@@ -60,6 +60,11 @@
       firebase.initializeApp(firebaseConfig);
       const db = firebase.database();
 
+      let serverOffset = 0;
+      firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
+      serverOffset = snap.val() || 0;
+      });
+
       let data = {
         scoreA: 0,
         scoreB: 0,
@@ -155,14 +160,19 @@
       function pauseGame() {
         if (!data.gameStart) return;
 
-        let elapsed = Math.floor((Date.now() - data.gameStart) / 1000);
-        let remaining = Math.max(0, (data.gameDuration || 0) - elapsed);
+          firebase.database().ref(".info/serverTimeOffset").once("value", (snap) => {
+          const offset = snap.val() || 0;
+          const now = Date.now() + offset;
 
-        save({
-          time: remaining,
-          gameStart: null,
-        });
-      }
+          let elapsed = Math.floor((now - data.gameStart) / 1000);
+          let remaining = Math.max(0, (data.gameDuration || 0) - elapsed);
+
+      save({
+      time: remaining,
+      gameStart: null,
+    });
+  });
+}
 
       function resetTimer() {
         save({
