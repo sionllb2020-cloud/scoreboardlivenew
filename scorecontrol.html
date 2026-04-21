@@ -146,10 +146,10 @@
       }
 
      function startGame() {
-  const OFFSET = 3000; // kompensasi 3 detik
+  const now = Date.now();
 
   save({
-    gameStart: Date.now() + OFFSET,
+    gameStart: now + 2000, // bisa disesuaikan
     gameDuration: data.time || 0,
   });
 }
