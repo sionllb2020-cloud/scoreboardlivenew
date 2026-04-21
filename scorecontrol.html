@@ -146,13 +146,11 @@
       }
 
      function startGame() {
-  const now = Date.now();
-
-  save({
-    gameStart: now + 1000, // bisa disesuaikan
-    gameDuration: data.time || 0,
-  });
-}
+        save({
+          gameStart: Date.now(),
+          gameDuration: data.time || 0,
+        });
+      }
 
       function pauseGame() {
         if (!data.gameStart) return;
