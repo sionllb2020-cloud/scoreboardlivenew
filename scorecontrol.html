@@ -151,9 +151,11 @@
       }
 
       function startGame() {
-        save({
-          gameStart: Date.now(),
-          gameDuration: data.time || 0,
+        const serverTime = firebase.database.ServerValue.TIMESTAMP;
+
+        db.ref("scoreboard").update({
+        gameStart: serverTime,
+        gameDuration: data.time || 0,
         });
       }
 
