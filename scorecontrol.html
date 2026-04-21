@@ -7,7 +7,7 @@
     <!-- 🔥 FIREBASE -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-    
+
     <style>
       body {
         background: black;
@@ -46,7 +46,6 @@
 
   <body>
     <script>
-      // 🔥 CONFIG KAMU
       const firebaseConfig = {
         apiKey: "AIzaSyAjfc1j_OqFf3GQBEJdvOxugZvEFYeilig",
         authDomain: "scoreboardlive-df382.firebaseapp.com",
@@ -56,14 +55,11 @@
         storageBucket: "scoreboardlive-df382.firebasestorage.app",
         messagingSenderId: "158633426706",
         appId: "1:158633426706:web:5db59534735d2e734dfdcb",
-        measurementId: "G-42BH7JL41P",
       };
 
-      // 🔥 INIT
       firebase.initializeApp(firebaseConfig);
       const db = firebase.database();
 
-      // 🔥 DATA DEFAULT
       let data = {
         scoreA: 0,
         scoreB: 0,
@@ -74,166 +70,168 @@
         q: 1,
         shot: 24,
         shotOn: true,
-        textColorA: "#ffffff",
-        textColorB: "#ffffff",
       };
 
-      // 🔥 AMBIL DATA DARI FIREBASE (BIAR TIDAK RESET)
-      db.ref("scoreboard").once("value", (snapshot) => {
-        if (snapshot.exists()) {
-          data = snapshot.val();
-        }
+      // 🔥 REALTIME SYNC (BUKAN ONCE!)
+      db.ref("scoreboard").on("value", (snap) => {
+        if (snap.exists()) data = snap.val();
       });
 
-      let gameInt = null;
-      let shotInt = null;
-
-      // 🔥 SAVE KE FIREBASE
-      function save() {
-        db.ref("scoreboard").set(data);
+      function save(obj) {
+        db.ref("scoreboard").update(obj);
       }
 
       /* TEAM */
       function setName(t, v) {
-        data["team" + t + "Name"] = v;
-        save();
+        save({ ["team" + t + "Name"]: v });
       }
 
       function setLogo(e, t) {
         let reader = new FileReader();
         reader.onload = () => {
-          data["logo" + t] = reader.result;
-          save();
+          save({ ["logo" + t]: reader.result });
         };
         reader.readAsDataURL(e.target.files[0]);
       }
 
       function randomColor(t) {
         let c = "#" + Math.floor(Math.random() * 16777215).toString(16);
-        data["color" + t] = c;
-        save();
+        save({ ["color" + t]: c });
       }
 
       function setColor(t, color) {
-        data["color" + t] = color;
-        save();
+        save({ ["color" + t]: color });
       }
 
       function setTextColor(t, color) {
-        data["textColor" + t] = color;
-        save();
+        save({ ["textColor" + t]: color });
       }
 
       /* SCORE */
       function addScore(t, v) {
-        data["score" + t] += v;
-        save();
+        let newScore = (data["score" + t] || 0) + v;
+        save({ ["score" + t]: newScore });
       }
 
       function resetScore() {
-        data.scoreA = 0;
-        data.scoreB = 0;
-        save();
+        save({ scoreA: 0, scoreB: 0 });
       }
 
       /* FOUL */
       function addFoul(t) {
-        data["foul" + t]++;
-        save();
+        let newFoul = (data["foul" + t] || 0) + 1;
+        save({ ["foul" + t]: newFoul });
       }
 
       function minusFoul(t) {
-        if (data["foul" + t] > 0) data["foul" + t]--;
-        save();
+        let newFoul = Math.max(0, (data["foul" + t] || 0) - 1);
+        save({ ["foul" + t]: newFoul });
       }
 
       function resetFoul() {
-        data.foulA = 0;
-        data.foulB = 0;
-        save();
+        save({ foulA: 0, foulB: 0 });
       }
 
-      /* TIMER */
+      /* TIMER (ANTI DELAY SYSTEM) */
       function setTime() {
         let m = parseInt(min.value) || 0;
         let s = parseInt(sec.value) || 0;
-        data.time = m * 60 + s;
-        data.defaultTime = data.time;
-        save();
+        let total = m * 60 + s;
+
+        save({
+          time: total,
+          defaultTime: total,
+          gameStart: null,
+        });
       }
 
       function startGame() {
-        if (gameInt) return;
-        gameInt = setInterval(() => {
-          if (data.time > 0) {
-            data.time--;
-            save();
-          }
-        }, 1000);
+        save({
+          gameStart: Date.now(),
+          gameDuration: data.time || 0,
+        });
       }
 
       function pauseGame() {
-        clearInterval(gameInt);
-        gameInt = null;
+        if (!data.gameStart) return;
+
+        let elapsed = Math.floor((Date.now() - data.gameStart) / 1000);
+        let remaining = Math.max(0, (data.gameDuration || 0) - elapsed);
+
+        save({
+          time: remaining,
+          gameStart: null,
+        });
       }
 
       function resetTimer() {
-        data.time = data.defaultTime;
-        pauseGame();
-        save();
+        save({
+          time: data.defaultTime || 600,
+          gameStart: null,
+        });
       }
 
       /* QUARTER */
       function nextQuarter() {
-        if (data.q < 4) {
-          data.q++;
-        }
-        data.time = data.defaultTime;
-        pauseGame();
-        save();
+        let q = Math.min(4, (data.q || 1) + 1);
+
+        save({
+          q: q,
+          time: data.defaultTime || 600,
+          gameStart: null,
+        });
       }
 
       function resetQuarter() {
-        data.q = 1;
-        data.time = data.defaultTime;
-        pauseGame();
-        save();
+        save({
+          q: 1,
+          time: data.defaultTime || 600,
+          gameStart: null,
+        });
       }
 
-      /* SHOT CLOCK */
+      /* SHOT CLOCK (ANTI DELAY) */
       function startShot() {
         if (!data.shotOn) return;
-        clearInterval(shotInt);
-        shotInt = setInterval(() => {
-          if (data.shot > 0) {
-            data.shot--;
-          } else {
-            data.shot = 24;
-          }
-          save();
-        }, 1000);
+
+        save({
+          shotStart: Date.now(),
+          shotDuration: data.shot || 24,
+        });
       }
 
       function pauseShot() {
-        clearInterval(shotInt);
-        shotInt = null;
+        if (!data.shotStart) return;
+
+        let elapsed = Math.floor((Date.now() - data.shotStart) / 1000);
+        let remaining = Math.max(0, (data.shotDuration || 24) - elapsed);
+
+        save({
+          shot: remaining,
+          shotStart: null,
+        });
       }
 
       function resetShot() {
-        data.shot = 24;
-        save();
+        save({
+          shot: 24,
+          shotStart: null,
+        });
       }
 
       function toggleShot() {
-        data.shotOn = !data.shotOn;
-        if (!data.shotOn) pauseShot();
-        save();
+        let newState = !data.shotOn;
+
+        save({
+          shotOn: newState,
+          shotStart: newState ? Date.now() : null,
+          shotDuration: 24,
+        });
       }
     </script>
 
-    <!-- UI kamu tetap sama -->
+    <!-- UI (TIDAK DIUBAH) -->
     <div class="container">
-      <!-- (tidak diubah, biar tetap seperti punyamu) -->
       <div>
         <div class="section">
           <h3>NAMA TEAM</h3>
@@ -296,7 +294,6 @@
         </div>
       </div>
 
-      <!-- KANAN -->
       <div>
         <div class="section">
           <h3>RESET</h3>
