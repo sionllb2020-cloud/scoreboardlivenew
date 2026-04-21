@@ -216,26 +216,28 @@
 
         save({
             shotStart: now,
-            shotDuration: data.shot || 24,
+            shotDuration: 24, // langsung pakai 24 biar konsisten
         });
         });
       }
 
-      function pauseShot() {
-        if (!data.shotStart) return;
+     function pauseShot() {
+      if (!data.shotStart) return;
 
-          firebase.database().ref(".info/serverTimeOffset").once("value", (snap) => {
-          const offset = snap.val() || 0;
-          const now = Date.now() + offset;
+        firebase.database().ref(".info/serverTimeOffset").once("value", (snap) => {
+        const offset = snap.val() || 0;
+        const now = Date.now() + offset;
 
-          let elapsed = Math.floor((now - data.shotStart) / 1000);
-          let remaining = Math.max(0, (data.shotDuration || 24) - elapsed);
+        let elapsed = Math.floor((now - data.shotStart) / 1000);
+        let duration = data.shotDuration || 24;
+
+        let remaining = duration - (elapsed % duration);
 
         save({
             shot: remaining,
             shotStart: null,
-        });
-        });
+       });
+       });
       }
 
       function resetShot() {
@@ -248,10 +250,15 @@
       function toggleShot() {
         let newState = !data.shotOn;
 
+        firebase.database().ref(".info/serverTimeOffset").once("value", (snap) => {
+        const offset = snap.val() || 0;
+        const now = Date.now() + offset;
+
         save({
           shotOn: newState,
-          shotStart: newState ? Date.now() : null,
+          shotStart: newState ? now : null,
           shotDuration: 24,
+        });
         });
       }
     </script>
