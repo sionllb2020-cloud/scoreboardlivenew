@@ -86,6 +86,25 @@
         db.ref("scoreboard").update(obj);
       }
 
+      setInterval(() => {
+        let now = Date.now() + serverOffset;
+
+        // 🔥 SHOT CLOCK LOOP
+          if (data.shotStart) {
+            let elapsed = Math.floor((now - data.shotStart) / 1000);
+            let duration = data.shotDuration || 24;
+
+            let remaining = duration - (elapsed % duration);
+
+            if (remaining === 0) remaining = duration;
+
+            shotText.innerText = remaining;
+          } else {
+            shotText.innerText = data.shot || 24;
+        }
+
+}, 100);
+
       /* TEAM */
       function setName(t, v) {
         save({ ["team" + t + "Name"]: v });
