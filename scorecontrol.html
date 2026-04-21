@@ -210,21 +210,31 @@
       function startShot() {
         if (!data.shotOn) return;
 
+          firebase.database().ref(".info/serverTimeOffset").once("value", (snap) => {
+          const offset = snap.val() || 0;
+          const now = Date.now() + offset;
+
         save({
-          shotStart: Date.now(),
-          shotDuration: data.shot || 24,
+            shotStart: now,
+            shotDuration: data.shot || 24,
+        });
         });
       }
 
       function pauseShot() {
         if (!data.shotStart) return;
 
-        let elapsed = Math.floor((Date.now() - data.shotStart) / 1000);
-        let remaining = Math.max(0, (data.shotDuration || 24) - elapsed);
+          firebase.database().ref(".info/serverTimeOffset").once("value", (snap) => {
+          const offset = snap.val() || 0;
+          const now = Date.now() + offset;
+
+          let elapsed = Math.floor((now - data.shotStart) / 1000);
+          let remaining = Math.max(0, (data.shotDuration || 24) - elapsed);
 
         save({
-          shot: remaining,
-          shotStart: null,
+            shot: remaining,
+            shotStart: null,
+        });
         });
       }
 
