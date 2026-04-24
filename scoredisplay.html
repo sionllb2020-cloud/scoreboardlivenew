@@ -104,10 +104,16 @@
         border-radius: 8px;
       }
 
-      #centerLogo {
-        width: 70px;
+      #logoContainer {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
         margin-top: 8px;
-        display: block;
+        flex-wrap: wrap;
+      }
+
+      #logoContainer img {
+        width: 60px;
       }
     </style>
   </head>
@@ -128,8 +134,8 @@
       <div class="center">
         <div id="timer">10:00</div>
         <div class="quarter" id="quarter">Q1</div>
-        <!-- 🔥 LOGO SPONSOR -->
-        <img id="centerLogo" />
+        <!-- container logo -->
+        <div id="logoContainer"></div>
       </div>
 
       <div class="score" id="scoreB">0</div>
@@ -196,10 +202,17 @@
         teamAName.style.color = currentData.textColorA || "#ffffff";
         teamBName.style.color = currentData.textColorB || "#ffffff";
 
-        if (currentData.centerLogo) {
-        centerLogo.src = currentData.centerLogo;
+        /* 🔥 MULTI LOGO SPONSOR */
+        logoContainer.innerHTML = "";
+
+        if (currentData.centerLogos && Array.isArray(currentData.centerLogos)) {
+          currentData.centerLogos.forEach((logo) => {
+        let img = document.createElement("img");
+          img.src = logo;
+          logoContainer.appendChild(img);
+          });
+        });
       }
-      });
 
       // 🔥 TIMER LOOP (LOKAL → SMOOTH)
       setInterval(() => {
