@@ -103,6 +103,12 @@
         margin-left: 10px;
         border-radius: 8px;
       }
+
+      #centerLogo {
+        width: 70px;
+        margin-top: 8px;
+        display: block;
+      }
     </style>
   </head>
 
@@ -122,6 +128,8 @@
       <div class="center">
         <div id="timer">10:00</div>
         <div class="quarter" id="quarter">Q1</div>
+        <!-- 🔥 LOGO SPONSOR -->
+        <img id="centerLogo" />
       </div>
 
       <div class="score" id="scoreB">0</div>
@@ -187,6 +195,10 @@
 
         teamAName.style.color = currentData.textColorA || "#ffffff";
         teamBName.style.color = currentData.textColorB || "#ffffff";
+
+        if (currentData.centerLogo) {
+        centerLogo.src = currentData.centerLogo;
+      }
       });
 
       // 🔥 TIMER LOOP (LOKAL → SMOOTH)
