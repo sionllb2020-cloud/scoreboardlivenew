@@ -99,6 +99,14 @@
         reader.readAsDataURL(e.target.files[0]);
       }
 
+      function setCenterLogo(e) {
+        let reader = new FileReader();
+        reader.onload = () => {
+          save({ centerLogo: reader.result });
+        };
+          reader.readAsDataURL(e.target.files[0]);
+        }
+
       function randomColor(t) {
         let c = "#" + Math.floor(Math.random() * 16777215).toString(16);
         save({ ["color" + t]: c });
@@ -282,6 +290,13 @@
           <div class="row">
             <input type="file" onchange="setLogo(event, 'A')" />
             <input type="file" onchange="setLogo(event, 'B')" />
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>LOGO SPONSOR (TENGAH)</h3>
+          <div class="row">
+            <input type="file" onchange="setCenterLogo(event)" />
           </div>
         </div>
 
